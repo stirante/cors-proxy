@@ -49,8 +49,6 @@ const allowMethods = [
   'OPTIONS'
 ]
 
-const allow = require('./allow-request.js')
-
 const filter = (predicate, middleware) => {
   function corsProxyMiddleware (req, res, next) {
     if (predicate(req, res)) {
@@ -87,11 +85,6 @@ function noop (_req, _res, next) {
 }
 
 module.exports = ({ origin, insecure_origins = [], authorization = noop } = {}) => {
-  function predicate (req) {
-    let u = url.parse(req.url, true)
-    // Not a git request, skip
-    return allow(req, u)
-  }
   function sendCorsOK (req, res, next) {
     // Handle CORS preflight request
     if (req.method === 'OPTIONS') {
@@ -112,7 +105,7 @@ module.exports = ({ origin, insecure_origins = [], authorization = noop } = {}) 
     }
 
     // GitHub uses user-agent sniffing for git/* and changes its behavior which is frustrating
-    if (!headers['user-agent'] || !headers['user-agent'].startsWith('git/')) {
+    if (!headers['user-agent']) {
       headers['user-agent'] = 'git/@isomorphic-git/cors-proxy'
     }
 
@@ -156,5 +149,5 @@ module.exports = ({ origin, insecure_origins = [], authorization = noop } = {}) 
     allowCredentials: false,
     origin
   })
-  return filter(predicate, cors(compose(sendCorsOK, authorization, middleware)))
+  return cors(compose(sendCorsOK, authorization, middleware))
 }
